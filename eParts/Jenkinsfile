@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs "node16"  // NodeJS installed in Jenkins Global Tool Configuration
+    }
+
+    environment {
+        DIST_DIR = "dist\\apps"
+        IIS_DEPLOY = "C:\\inetpub\\wwwroot"
+    }
+
+    triggers {
+        pollSCM('* * * * *') // poll Git every minute (or use webhook)
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/your/repo.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                bat 'npm install'
+            }
+        }
+
+        stage('Build App') {
+            steps {
+                bat 'npx nx build admin --configuration=production'
+            }
+        }
+
+        stage('Deploy to IIS') {
+            steps {
+                bat """
+                echo Deploying to IIS...
+
+                if not exist %IIS_DEPLOY%\\admin mkdir %IIS_DEPLOY%\\admin
+
+                xcopy /E /I /Y %DIST_DIR%\\admin\\* %IIS_DEPLOY%\\admin\\
+
+                echo Restarting IIS App Pool...
+                powershell -Command "Restart-WebAppPool -Name 'DefaultAppPool'"
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Build & Deploy Successful!"
+        }
+        failure {
+            echo "❌ Build Failed. Check logs."
+        }
+    }
+}
