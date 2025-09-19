@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        DIST_DIR = "dist\\apps"
+        DIST_DIR = "dist"
         IIS_DEPLOY = "C:\\inetpub\\wwwroot\\admin"
     }
 
