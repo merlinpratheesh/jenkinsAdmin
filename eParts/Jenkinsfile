@@ -2,21 +2,21 @@ pipeline {
     agent any
 
     tools {
-        nodejs "node16"  // NodeJS installed in Jenkins Global Tool Configuration
+        nodejs "node16" // NodeJS installed in Jenkins Global Tools
     }
 
     environment {
         DIST_DIR = "dist\\apps"
-        IIS_DEPLOY = "C:\\inetpub\\wwwroot"
+        IIS_DEPLOY = "C:\\inetpub\\wwwroot\\admin"
     }
 
     triggers {
-        pollSCM('* * * * *') // poll Git every minute (or use webhook)
+        pollSCM('* * * * *') // Poll Git every minute (or use GitHub webhook)
     }
 
     stages {
         stage('Checkout') {
-            steps {Checkout
+            steps {
                 git branch: 'main', url: 'https://github.com/merlinpratheesh/jenkinsAdmin.git'
             }
         }
@@ -33,14 +33,21 @@ pipeline {
             }
         }
 
+        stage('Clean IIS Folder') {
+            steps {
+                bat """
+                echo Cleaning IIS folder...
+                if exist %IIS_DEPLOY% rmdir /S /Q %IIS_DEPLOY%
+                mkdir %IIS_DEPLOY%
+                """
+            }
+        }
+
         stage('Deploy to IIS') {
             steps {
                 bat """
                 echo Deploying to IIS...
-
-                if not exist %IIS_DEPLOY%\\admin mkdir %IIS_DEPLOY%\\admin
-
-                xcopy /E /I /Y %DIST_DIR%\\admin\\* %IIS_DEPLOY%\\admin\\
+                xcopy /E /I /Y %DIST_DIR%\\admin\\* %IIS_DEPLOY%\\
 
                 echo Restarting IIS App Pool...
                 powershell -Command "Restart-WebAppPool -Name 'DefaultAppPool'"
@@ -51,7 +58,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build & Deploy Successful!"
+            echo "✅ Build & Deploy Successful! Visit http://localhost:8000/"
         }
         failure {
             echo "❌ Build Failed. Check logs."
