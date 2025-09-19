@@ -8,6 +8,7 @@ pipeline {
     environment {
         DIST_DIR = "dist"
         IIS_DEPLOY = "C:\\inetpub\\wwwroot\\admin"
+        APP_POOL = "DefaultAppPool" // Change if your App Pool name is different
     }
 
     triggers {
@@ -33,24 +34,30 @@ pipeline {
             }
         }
 
-        stage('Clean IIS Folder') {
+        stage('Prepare IIS Deployment') {
             steps {
-                bat """
-                echo Cleaning IIS folder...
-                if exist %IIS_DEPLOY% rmdir /S /Q %IIS_DEPLOY%
-                mkdir %IIS_DEPLOY%
+                powershell """
+                Write-Host 'Stopping App Pool...'
+                Stop-WebAppPool -Name '$env:APP_POOL'
+
+                Write-Host 'Cleaning IIS folder...'
+                if (Test-Path '$env:IIS_DEPLOY') {
+                    Remove-Item '$env:IIS_DEPLOY\\*' -Recurse -Force
+                } else {
+                    New-Item -Path '$env:IIS_DEPLOY' -ItemType Directory
+                }
                 """
             }
         }
 
         stage('Deploy to IIS') {
             steps {
-                bat """
-                echo Deploying to IIS...
-                xcopy /E /I /Y %DIST_DIR%\\admin\\* %IIS_DEPLOY%\\
+                powershell """
+                Write-Host 'Deploying files...'
+                robocopy '$env:DIST_DIR\\admin' '$env:IIS_DEPLOY' /MIR /MT:8
 
-                echo Restarting IIS App Pool...
-                powershell -Command "Restart-WebAppPool -Name 'DefaultAppPool'"
+                Write-Host 'Restarting App Pool...'
+                Start-WebAppPool -Name '$env:APP_POOL'
                 """
             }
         }
@@ -58,10 +65,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build & Deploy Successful! Visit http://localhost:8000/"
+            echo "✅ Build & Deploy Successful! Visit your IIS URL."
         }
         failure {
-            echo "❌ Build Failed. Check logs."
+            echo "❌ Build Failed. Check Jenkins logs."
         }
     }
 }
