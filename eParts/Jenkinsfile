@@ -6,6 +6,7 @@ pipeline {
     }
 
     environment {
+        // NX build output folder
         DIST_DIR = "${WORKSPACE}\\dist\\apps\\admin"
         IIS_DEPLOY = "C:\\inetpub\\wwwroot\\admin"
         APP_POOL = "admin" // Change if your App Pool name is different
@@ -30,8 +31,7 @@ pipeline {
 
         stage('Build Admin') {
             steps {
-                     bat 'npx nx build admin --prod'
-
+                bat 'npx nx build admin --prod'
             }
         }
 
@@ -55,7 +55,7 @@ pipeline {
             steps {
                 powershell """
                 Write-Host 'Deploying files...'
-                robocopy '$env:DIST_DIR\\admin' '$env:IIS_DEPLOY' /MIR /MT:8
+                robocopy '$env:DIST_DIR' '$env:IIS_DEPLOY' /MIR /MT:8
 
                 Write-Host 'Restarting App Pool...'
                 Start-WebAppPool -Name '$env:APP_POOL'
