@@ -5,11 +5,11 @@ pipeline {
         nodejs "node16" // NodeJS installed in Jenkins Global Tools
     }
 
-environment {
-    DIST_DIR = "${WORKSPACE}\\dist"
-    IIS_DEPLOY = "C:\\<your-physical-path-from-step-2>"
-    APP_POOL = "<your-app-pool-from-step-1>"
-}
+    environment {
+        DIST_DIR = "dist"
+        IIS_DEPLOY = "C:\\inetpub\\wwwroot\\admin"
+        APP_POOL = "admin" // Change if your App Pool name is different
+    }
 
     triggers {
         pollSCM('* * * * *') // Poll Git every minute (or use GitHub webhook)
