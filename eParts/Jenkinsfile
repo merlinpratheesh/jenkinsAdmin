@@ -28,9 +28,10 @@ pipeline {
             }
         }
 
-        stage('Build App') {
+        stage('Build Admin') {
             steps {
-                bat 'npx nx build admin --configuration=production'
+                     bat 'npx nx build admin --prod'
+
             }
         }
 
